@@ -1,0 +1,60 @@
+Sitem Informasi Request Bimbingan/Pertemuan Dosen
+
+Users/Pengguna :
+1. Admin
+2. Dosen
+3. Mahasiswa
+
+
+Action:
+=== All ===
+Mengecek Daftar Dosen Terbooking (Kalender)
+
+=== Admin ===
+1. CRUD akun Dosen/Mahasiswa
+2. Menampilkan daftar Request
+=============
+
+=== Dosen === 
+1. Login
+2. Menampilkan daftar Request Pertemuan
+3. Accept/Reject Request Pertemuan (Dengan response)
+=============
+
+=== Mahasiswa/i ===
+1. Login
+2. Menampilkan daftar Request sendiri
+3. Mengajukan Request Pertemuan
+===================
+
+
+List of APIs
+
+===>>> General API
+dosen/index
+
+===>>> Admin
+login/admin (username, password)
+user/dosen/index
+user/dosen/create
+user/dosen/read
+user/dosen/update
+user/dosen/delete
+user/mahasiswa/index
+user/mahasiswa/create
+user/mahasiswa/read
+user/mahasiswa/update
+user/mahasiswa/delete
+requests/
+
+===>>> Dosen
+login/dosen
+requests/{id_dosen}
+request/accept/{request_id}
+request/reject/{request_id}
+
+===>>> Mahasiswa
+login/mahasiswa
+requests/{id_mahasiswa}
+requests/detail/{request_id}
+request/create

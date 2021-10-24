@@ -1,0 +1,633 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"io/ioutil"
+	"github.com/gorilla/mux"
+)
+
+var db, err = getDB()
+
+// ================================ COMMON ================================ //
+func isDataExists(fieldName string, value string, tableName string) bool {
+	rows, err := db.Query("SELECT * FROM " +tableName+ " WHERE " +fieldName+ " = ? ", value)
+	if err != nil {
+		return false
+	}
+
+	for rows.Next() {
+		return true
+	}
+	return false
+}
+// ================================ COMMON ================================ //
+
+
+// ================================ ADMIN ================================ //
+func checkAdmin(_username string, _password string) (Admin, error) {
+	fmt.Println("checkAdmin Hit!")
+
+	var admin Admin
+	row := db.QueryRow("SELECT id, username from admin WHERE username = ? AND password = ? AND status = 'active' ", _username, _password)
+	err = row.Scan(&admin.Id, &admin.Username)
+	if err != nil {
+		return admin, err
+	}
+	return admin, nil
+}
+
+func adminLogin(w http.ResponseWriter, r *http.Request) {
+	var response LoginResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Role = "admin"
+	response.Data = Admin{}
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	admin, err := checkAdmin(username, password)
+	if err == nil {
+		response.Error = false
+		response.Message = "Akun ditemukan"
+		response.Data = admin
+	} else {
+		response.Message = "Akun tidak ditemukan"
+	}
+
+	respondWithSuccess(response, w)
+}
+// ================================ ADMIN ================================ //
+
+
+// ================================ DOSEN ================================ //
+func checkDosen(_username string, _password string) (Dosen, error) {
+	fmt.Println("checkDosen Hit!")
+	fmt.Println(_username, _password)
+
+	var dosen Dosen
+	row := db.QueryRow("SELECT * from dosen WHERE username = ? AND password = ? AND status = 'active' ", _username, _password)
+	err = row.Scan(&dosen.Id, &dosen.Username, &dosen.Password, &dosen.Foto, &dosen.NIP, &dosen.NamaLengkap, &dosen.JenisKelamin, &dosen.Status, &dosen.CreatedAt, &dosen.ModifiedAt)
+	if err != nil {
+		fmt.Println(err)
+		return dosen, err
+	}
+	return dosen, nil
+}
+
+func dosenIndex(w http.ResponseWriter, r *http.Request) {
+	param_limit := r.URL.Query()["limit"]
+	limit := ""
+	if len(param_limit) > 0 {
+		limit = " LIMIT " + param_limit[0]
+	}
+	fmt.Println("Limit: ", limit)
+
+	var response IndexResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = []Dosen{}
+	var dosens = []Dosen{}
+
+	rows, err := db.Query("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at FROM dosen ORDER BY id DESC " + limit)
+	if err != nil {
+		response.Message = "(0) Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+		return
+	}
+
+	for rows.Next() {
+		var dosen Dosen
+		err = rows.Scan(&dosen.Id, &dosen.Username, &dosen.Foto, &dosen.NIP, &dosen.NamaLengkap, &dosen.JenisKelamin, &dosen.Status, &dosen.CreatedAt)
+		if err != nil {
+			response.Message = "(1) Terjadi kesalahan pada database"
+			fmt.Println(err)
+			respondWithSuccess(response, w)
+			return
+		}
+		dosens = append(dosens, dosen)
+	}
+
+	response.Error = true
+	response.Message = "Data ditemukan"
+	response.Data = dosens
+	respondWithSuccess(response, w)
+}
+
+func dosenLogin(w http.ResponseWriter, r *http.Request) {
+	var response LoginResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Role = "dosen"
+	response.Data = Dosen{}
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	dosen, err := checkDosen(username, generateMD5(password))
+	if err == nil {
+		response.Error = false
+		response.Message = "Akun ditemukan"
+		response.Data = dosen
+	} else {
+		response.Message = "Akun tidak ditemukan"
+	}
+
+	respondWithSuccess(response, w)
+}
+
+func dosenDisable(w http.ResponseWriter, r *http.Request) {
+	var response CommonDeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE dosen SET status = 'deleted' WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Dosen berhasil di Nonaktifkan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func dosenEnable(w http.ResponseWriter, r *http.Request) {
+	var response CommonDeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE dosen SET status = 'active' WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Dosen berhasil di Aktifkan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func dosenShow(w http.ResponseWriter, r *http.Request) {
+	var dosen Dosen
+	var response CommonDetailResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = Dosen{}
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	row := db.QueryRow("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at, modified_at FROM dosen WHERE id = ?", id)
+	err = row.Scan(&dosen.Id, &dosen.Username, &dosen.Foto, &dosen.NIP, &dosen.NamaLengkap, &dosen.JenisKelamin, &dosen.Status, &dosen.CreatedAt, &dosen.ModifiedAt)
+	if err == nil {
+		response.Error = false
+		response.Message = "Data ditemukan"
+		response.Data = dosen
+		respondWithSuccess(response, w)
+	} else {
+		fmt.Println(err)
+		response.Message = "(1) ID Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func dosenUpdate(w http.ResponseWriter, r *http.Request) {
+	var response CommonUpdateResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	id := r.FormValue("id")
+	file, handler, errFile := r.FormFile("foto")
+	fullPath := ""
+	nip := r.FormValue("nip")
+	password := r.FormValue("password")
+	namaLengkap := r.FormValue("nama_lengkap")
+	jenisKelamin := r.FormValue("jenis_kelamin")
+
+	if errFile == nil {
+		fmt.Println("Uploaded File: %+v\n", handler.Filename)
+
+		photoDir := "images/dosen"
+		fileName := ("dosen-*" + ".png")
+
+		// ============ UPLOADING FILES ============ //
+		tempFile, err := ioutil.TempFile(photoDir, fileName)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(1) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+		defer tempFile.Close()
+
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(2) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+
+		tempFile.Write(fileBytes)
+		fullPath = tempFile.Name()
+		// ============ UPLOADING FILES ============ //
+	}
+
+	if fullPath == "" {
+		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), id)
+	} else {
+		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, foto = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), fullPath, id)
+	}
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Dosen berhasil di ubah"
+		respondWithSuccess(response, w)
+	}
+}
+
+func dosenCreate(w http.ResponseWriter, r *http.Request) {
+	var response CommonInsertionResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	file, handler, errFile := r.FormFile("foto")
+	fullPath := ""
+	nip := r.FormValue("nip")
+	namaLengkap := r.FormValue("nama_lengkap")
+	jenisKelamin := r.FormValue("jenis_kelamin")
+
+	if isDataExists("username", username, "dosen") {
+		response.Message = "Username ini sudah terdaftar"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	fmt.Println("Uploaded File: %+v\n", handler.Filename)
+
+	if errFile == nil {
+		photoDir := "images/dosen"
+		fileName := ("dosen-*" + ".png")
+
+		// ============ UPLOADING FILES ============ //
+		tempFile, err := ioutil.TempFile(photoDir, fileName)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(1) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+		defer tempFile.Close()
+
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(2) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+
+		tempFile.Write(fileBytes)
+		fullPath = tempFile.Name()
+		// ============ UPLOADING FILES ============ //
+	}
+
+	_, err = db.Exec("INSERT INTO dosen (username, password, foto, nip, nama_lengkap, jenis_kelamin, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nip, namaLengkap, jenisKelamin)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Dosen berhasil di buat"
+		respondWithSuccess(response, w)
+	}
+}
+// ================================ DOSEN ================================ //
+
+
+// ================================ MAHASISWA ================================ //
+func checkMahasiswa(_username string, _password string) (Mahasiswa, error) {
+	fmt.Println("checkDosen Hit!")
+	fmt.Println(_username, _password)
+
+	var mahasiswa Mahasiswa
+	row := db.QueryRow("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at from mahasiswa WHERE username = ? AND password = ? AND status = 'active' ", _username, _password)
+	err = row.Scan(&mahasiswa.Id, &mahasiswa.Username, &mahasiswa.Foto, &mahasiswa.NIM, &mahasiswa.NamaLengkap, &mahasiswa.JenisKelamin, &mahasiswa.Kelas, &mahasiswa.TahunMasuk, &mahasiswa.Semester, &mahasiswa.Status, &mahasiswa.CreatedAt)
+	if err != nil {
+		fmt.Println(err)
+		return mahasiswa, err
+	}
+	return mahasiswa, nil
+}
+
+func mahasiswaIndex(w http.ResponseWriter, r *http.Request) {
+	param_limit := r.URL.Query()["limit"]
+	limit := ""
+	if len(param_limit) > 0 {
+		limit = " LIMIT " + param_limit[0]
+	}
+	fmt.Println("Limit: ", limit)
+
+	var response IndexResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = []Mahasiswa{}
+	var mahasiswas = []Mahasiswa{}
+
+	rows, err := db.Query("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa ORDER BY id DESC " + limit)
+	if err != nil {
+		response.Message = "(0) Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+		return
+	}
+
+	for rows.Next() {
+		var mahasiswa Mahasiswa
+		err = rows.Scan(&mahasiswa.Id, &mahasiswa.Username, &mahasiswa.Foto, &mahasiswa.NIM, &mahasiswa.NamaLengkap, &mahasiswa.JenisKelamin, &mahasiswa.Kelas, &mahasiswa.TahunMasuk, &mahasiswa.Semester, &mahasiswa.Status, &mahasiswa.CreatedAt)
+		if err != nil {
+			response.Message = "(1) Terjadi kesalahan pada database"
+			fmt.Println(err)
+			respondWithSuccess(response, w)
+			return
+		}
+		mahasiswas = append(mahasiswas, mahasiswa)
+	}
+
+	response.Error = true
+	response.Message = "Data ditemukan"
+	response.Data = mahasiswas
+	respondWithSuccess(response, w)
+}
+
+func mahasiswaLogin(w http.ResponseWriter, r *http.Request) {
+	var response LoginResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Role = "mahasiswa"
+	response.Data = Mahasiswa{}
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	mahasiswa, err := checkMahasiswa(username, generateMD5(password))
+	if err == nil {
+		response.Error = false
+		response.Message = "Akun ditemukan"
+		response.Data = mahasiswa
+	} else {
+		response.Message = "Akun tidak ditemukan"
+	}
+
+	respondWithSuccess(response, w)
+}
+
+func mahasiswaDisable(w http.ResponseWriter, r *http.Request) {
+	var response CommonDeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE mahasiswa SET status = 'deleted' WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Mahasiswa berhasil di Nonaktifkan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func mahasiswaEnable(w http.ResponseWriter, r *http.Request) {
+	var response CommonDeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE mahasiswa SET status = 'active' WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Mahasiswa berhasil di Aktifkan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func mahasiswaShow(w http.ResponseWriter, r *http.Request) {
+	var mahasiswa Mahasiswa
+	var response CommonDetailResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = Mahasiswa{}
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	row := db.QueryRow("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa WHERE id = ?", id)
+	err = row.Scan(&mahasiswa.Id, &mahasiswa.Username, &mahasiswa.Foto, &mahasiswa.NIM, &mahasiswa.NamaLengkap, &mahasiswa.JenisKelamin, &mahasiswa.Kelas, &mahasiswa.TahunMasuk, &mahasiswa.Semester, &mahasiswa.Status, &mahasiswa.CreatedAt)
+	if err == nil {
+		response.Error = false
+		response.Message = "Data ditemukan"
+		response.Data = mahasiswa
+		respondWithSuccess(response, w)
+	} else {
+		fmt.Println(err)
+		response.Message = "(1) ID Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+	}
+}
+
+func mahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
+	var response CommonUpdateResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	id := r.FormValue("id")
+	file, handler, errFile := r.FormFile("foto")
+	fullPath := ""
+	nim := r.FormValue("nim")
+	password := r.FormValue("password")
+	namaLengkap := r.FormValue("nama_lengkap")
+	jenisKelamin := r.FormValue("jenis_kelamin")
+	kelas := r.FormValue("kelas")
+	tahun_masuk := r.FormValue("tahun_masuk")
+	semester := r.FormValue("semester")
+
+	if errFile == nil {
+		fmt.Println("Uploaded File: %+v\n", handler.Filename)
+
+		photoDir := "images/mahasiswa"
+		fileName := ("mahasiswa-*" + ".png")
+
+		// ============ UPLOADING FILES ============ //
+		tempFile, err := ioutil.TempFile(photoDir, fileName)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(1) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+		defer tempFile.Close()
+
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(2) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+
+		tempFile.Write(fileBytes)
+		fullPath = tempFile.Name()
+		// ============ UPLOADING FILES ============ //
+	}
+
+	if fullPath == "" {
+		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, id)
+	} else {
+		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ?, foto = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, fullPath, id)
+	}
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Mahasiswa berhasil di ubah"
+		respondWithSuccess(response, w)
+	}
+}
+
+func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
+	var response CommonInsertionResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	file, handler, errFile := r.FormFile("foto")
+	fullPath := ""
+	nim := r.FormValue("nim")
+	namaLengkap := r.FormValue("nama_lengkap")
+	jenisKelamin := r.FormValue("jenis_kelamin")
+	kelas := r.FormValue("kelas")
+	tahun_masuk := r.FormValue("tahun_masuk")
+	semester := r.FormValue("semester")
+
+	if isDataExists("username", username, "mahasiswa") {
+		response.Message = "Username ini sudah terdaftar"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	fmt.Println("Uploaded File: %+v\n", handler.Filename)
+
+	if errFile == nil {
+		photoDir := "images/mahasiswa"
+		fileName := ("mahasiswa-*" + ".png")
+
+		// ============ UPLOADING FILES ============ //
+		tempFile, err := ioutil.TempFile(photoDir, fileName)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(1) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+		defer tempFile.Close()
+
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+			response.Message = "(2) Terjadi kesalahan pada upload File"
+			respondWithSuccess(response, w)
+			return
+		}
+
+		tempFile.Write(fileBytes)
+		fullPath = tempFile.Name()
+		// ============ UPLOADING FILES ============ //
+	}
+
+	_, err = db.Exec("INSERT INTO mahasiswa (username, password, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nim, namaLengkap, jenisKelamin, kelas, tahun_masuk, semester)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Akun Mahasiswa berhasil di buat"
+		respondWithSuccess(response, w)
+	}
+}
+// ================================ MAHASISWA ================================ //
