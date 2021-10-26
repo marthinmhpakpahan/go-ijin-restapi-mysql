@@ -27,4 +27,14 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/user/mahasiswa/enable/{id}", mahasiswaEnable).Methods(http.MethodGet)
 	router.HandleFunc("/user/mahasiswa/", mahasiswaIndex).Methods(http.MethodGet)
 	// ============================ MAHASISWA ============================ //
+
+	// ============================ REQUEST ============================ //
+	router.HandleFunc("/request/dosen/{id}", requestDosen).Methods(http.MethodGet)
+	router.HandleFunc("/request/mahasiswa/{id}", requestMahasiswa).Methods(http.MethodGet)
+	router.HandleFunc("/request/dosen/accept/{id}", requestDosenAccept).Methods(http.MethodGet)
+	router.HandleFunc("/request/dosen/reject/{id}", requestDosenReject).Methods(http.MethodGet)
+	router.HandleFunc("/request/mahasiswa/create", requestMahasiswaCreate).Methods(http.MethodPost)
+	router.HandleFunc("/request/mahasiswa/update", requestMahasiswaUpdate).Methods(http.MethodPost)
+	router.HandleFunc("/request/mahasiswa/delete/{id}", requestMahasiswaDelete).Methods(http.MethodGet)
+	// ============================ REQUEST ============================ //
 }

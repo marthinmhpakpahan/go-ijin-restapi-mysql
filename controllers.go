@@ -139,7 +139,7 @@ func dosenLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func dosenDisable(w http.ResponseWriter, r *http.Request) {
-	var response CommonDeletionResponse
+	var response DeletionResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 
@@ -166,7 +166,7 @@ func dosenDisable(w http.ResponseWriter, r *http.Request) {
 }
 
 func dosenEnable(w http.ResponseWriter, r *http.Request) {
-	var response CommonDeletionResponse
+	var response DeletionResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 
@@ -194,7 +194,7 @@ func dosenEnable(w http.ResponseWriter, r *http.Request) {
 
 func dosenShow(w http.ResponseWriter, r *http.Request) {
 	var dosen Dosen
-	var response CommonDetailResponse
+	var response DetailResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 	response.Data = Dosen{}
@@ -223,7 +223,7 @@ func dosenShow(w http.ResponseWriter, r *http.Request) {
 }
 
 func dosenUpdate(w http.ResponseWriter, r *http.Request) {
-	var response CommonUpdateResponse
+	var response UpdateResponse
 	response.Error = true
 	response.Message = "(0) Terjadi kesalahan pada sistem"
 
@@ -282,7 +282,7 @@ func dosenUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func dosenCreate(w http.ResponseWriter, r *http.Request) {
-	var response CommonInsertionResponse
+	var response InsertionResponse
 	response.Error = true
 	response.Message = "(0) Terjadi kesalahan pada sistem"
 
@@ -422,7 +422,7 @@ func mahasiswaLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func mahasiswaDisable(w http.ResponseWriter, r *http.Request) {
-	var response CommonDeletionResponse
+	var response DeletionResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 
@@ -449,7 +449,7 @@ func mahasiswaDisable(w http.ResponseWriter, r *http.Request) {
 }
 
 func mahasiswaEnable(w http.ResponseWriter, r *http.Request) {
-	var response CommonDeletionResponse
+	var response DeletionResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 
@@ -477,7 +477,7 @@ func mahasiswaEnable(w http.ResponseWriter, r *http.Request) {
 
 func mahasiswaShow(w http.ResponseWriter, r *http.Request) {
 	var mahasiswa Mahasiswa
-	var response CommonDetailResponse
+	var response DetailResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 	response.Data = Mahasiswa{}
@@ -506,7 +506,7 @@ func mahasiswaShow(w http.ResponseWriter, r *http.Request) {
 }
 
 func mahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
-	var response CommonUpdateResponse
+	var response UpdateResponse
 	response.Error = true
 	response.Message = "(0) Terjadi kesalahan pada sistem"
 
@@ -568,7 +568,7 @@ func mahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
-	var response CommonInsertionResponse
+	var response InsertionResponse
 	response.Error = true
 	response.Message = "(0) Terjadi kesalahan pada sistem"
 
@@ -631,3 +631,249 @@ func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 // ================================ MAHASISWA ================================ //
+
+// ================================ REQUEST ================================ //
+func requestDosen(w http.ResponseWriter, r *http.Request) {
+	var requests = []Request{}
+	var response IndexResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = requests
+
+	param_limit := r.URL.Query()["limit"]
+	limit := ""
+	if len(param_limit) > 0 {
+		limit = " LIMIT " + param_limit[0]
+	}
+	fmt.Println("Limit: ", limit)
+
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND STATUS = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	rows, err := db.Query("SELECT * FROM requests WHERE dosen_id = ? " + status + limit, id)
+	if err != nil {
+		response.Message = "(0) Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+		return
+	}
+
+	for rows.Next() {
+		var request Request
+		err = rows.Scan(&request.Id, &request.RequestTypeId, &request.Description, &request.DosenId, &request.MahasiswaId, &request.StartDatetime, &request.EndDatetime, &request.Status, &request.CreatedAt, &request.ModifiedAt)
+		if err != nil {
+			response.Message = "(1) Terjadi kesalahan pada database"
+			fmt.Println(err)
+			respondWithSuccess(response, w)
+			return
+		}
+		requests = append(requests, request)
+	}
+
+	response.Error = true
+	response.Message = "Data ditemukan"
+	response.Data = requests
+	respondWithSuccess(response, w)
+}
+
+func requestMahasiswa(w http.ResponseWriter, r *http.Request) {
+	var requests = []Request{}
+	var response IndexResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = requests
+
+	param_limit := r.URL.Query()["limit"]
+	limit := ""
+	if len(param_limit) > 0 {
+		limit = " LIMIT " + param_limit[0]
+	}
+	fmt.Println("Limit: ", limit)
+
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND STATUS = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	rows, err := db.Query("SELECT * FROM requests WHERE mahasiswa_id = ? " + status + limit, id)
+	if err != nil {
+		response.Message = "(0) Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+		return
+	}
+
+	for rows.Next() {
+		var request Request
+		err = rows.Scan(&request.Id, &request.RequestTypeId, &request.Description, &request.DosenId, &request.MahasiswaId, &request.StartDatetime, &request.EndDatetime, &request.Status, &request.CreatedAt, &request.ModifiedAt)
+		if err != nil {
+			response.Message = "(1) Terjadi kesalahan pada database"
+			fmt.Println(err)
+			respondWithSuccess(response, w)
+			return
+		}
+		requests = append(requests, request)
+	}
+
+	response.Error = true
+	response.Message = "Data ditemukan"
+	response.Data = requests
+	respondWithSuccess(response, w)
+}
+
+func requestDosenAccept(w http.ResponseWriter, r *http.Request) {
+	var response DeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Request tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE requests SET status = 'accepted', modified_at = NOW() WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Request berhasil di Setujui"
+		respondWithSuccess(response, w)
+	}
+}
+
+func requestDosenReject(w http.ResponseWriter, r *http.Request) {
+	var response DeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Request tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE requests SET status = 'rejected', modified_at = NOW() WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Request berhasil di Tolak"
+		respondWithSuccess(response, w)
+	}
+}
+
+func requestMahasiswaDelete(w http.ResponseWriter, r *http.Request) {
+	var response DeletionResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+
+	_id := mux.Vars(r)["id"]
+	id, err := stringToInt64(_id)
+
+	if err != nil {
+		response.Message = "(0) ID Request tidak ditemukan"
+		respondWithSuccess(response, w)
+		return
+	}
+
+	_, err = db.Exec("UPDATE requests SET status = 'deleted', modified_at = NOW() WHERE id = ?", id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Request berhasil di hapus"
+		respondWithSuccess(response, w)
+	}
+}
+
+func requestMahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
+	var response UpdateResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	id := r.FormValue("id")
+	request_type_id := r.FormValue("request_type_id")
+	description := r.FormValue("description")
+	dosen_id := r.FormValue("dosen_id")
+	mahasiswa_id := r.FormValue("mahasiswa_id")
+	start_datetime := r.FormValue("start_datetime")
+	end_datetime := r.FormValue("end_datetime")
+
+	_, err = db.Exec("UPDATE requests SET request_type_id = ?, description = ?, dosen_id = ?, mahasiswa_id = ?, start_datetime = ?, end_datetime = ?, modified_at = NOW() WHERE id = ?", request_type_id, description, dosen_id, mahasiswa_id, start_datetime, end_datetime, id)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Request ke Dosen berhasil di ubah"
+		respondWithSuccess(response, w)
+	}
+}
+
+func requestMahasiswaCreate(w http.ResponseWriter, r *http.Request) {
+	var response InsertionResponse
+	response.Error = true
+	response.Message = "(0) Terjadi kesalahan pada sistem"
+
+	request_type_id := r.FormValue("request_type_id")
+	description := r.FormValue("description")
+	dosen_id := r.FormValue("dosen_id")
+	mahasiswa_id := r.FormValue("mahasiswa_id")
+	start_datetime := r.FormValue("start_datetime")
+	end_datetime := r.FormValue("end_datetime")
+
+	_, err = db.Exec("INSERT INTO requests (request_type_id, description, dosen_id, mahasiswa_id, start_datetime, end_datetime, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())", request_type_id, description, dosen_id, mahasiswa_id, start_datetime, end_datetime)
+
+	if err != nil {
+		response.Message = "Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+	} else {
+		response.Error = false
+		response.Message = "Request untuk Dosen berhasil di buat"
+		respondWithSuccess(response, w)
+	}
+}
+// ================================ REQUEST ================================ //

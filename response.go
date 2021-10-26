@@ -13,22 +13,22 @@ type IndexResponse struct {
 	Data interface{} `json:"data"`
 }
 
-type CommonInsertionResponse struct {
+type InsertionResponse struct {
 	Error bool `json:"error"`
 	Message string `json:"message"`
 }
 
-type CommonUpdateResponse struct {
+type UpdateResponse struct {
 	Error bool `json:"error"`
 	Message string `json:"message"`
 }
 
-type CommonDeletionResponse struct {
+type DeletionResponse struct {
 	Error bool `json:"error"`
 	Message string `json:"message"`
 }
 
-type CommonDetailResponse struct {
+type DetailResponse struct {
 	Error bool `json:"error"`
 	Message string `json:"message"`
 	Data interface{} `json:"data"`
