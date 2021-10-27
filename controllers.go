@@ -350,7 +350,7 @@ func dosenTotal(w http.ResponseWriter, r *http.Request) {
 	response.Data = data
 
 	row := db.QueryRow("SELECT COUNT(*) as total FROM dosen WHERE status = 'active'")
-	err = row.Scan(&data.total)
+	err = row.Scan(&data.Total)
 	if err == nil {
 		response.Error = false
 		response.Message = "Data ditemukan"
@@ -660,7 +660,7 @@ func mahasiswaTotal(w http.ResponseWriter, r *http.Request) {
 	response.Data = data
 
 	row := db.QueryRow("SELECT COUNT(*) as total FROM mahasiswa WHERE status = 'active'")
-	err = row.Scan(&data.total)
+	err = row.Scan(&data.Total)
 	if err == nil {
 		response.Error = false
 		response.Message = "Data ditemukan"
@@ -934,7 +934,7 @@ func requestTotal(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("status: ", status)
 
 	row := db.QueryRow("SELECT COUNT(*) as total FROM requests WHERE 1=1 " + status)
-	err = row.Scan(&data.total)
+	err = row.Scan(&data.Total)
 	if err == nil {
 		response.Error = false
 		response.Message = "Data ditemukan"
