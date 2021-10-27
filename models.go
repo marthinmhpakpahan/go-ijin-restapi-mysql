@@ -55,3 +55,7 @@ type Request struct {
 	CreatedAt string `json:"created_at"`
 	ModifiedAt string `json:"modified_at"`
 }
+
+type Counter struct {
+	Total int64 `json:"total"`
+}

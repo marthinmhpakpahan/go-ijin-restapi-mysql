@@ -341,6 +341,27 @@ func dosenCreate(w http.ResponseWriter, r *http.Request) {
 		respondWithSuccess(response, w)
 	}
 }
+
+func dosenTotal(w http.ResponseWriter, r *http.Request) {
+	var data Counter
+	var response DetailResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = data
+
+	row := db.QueryRow("SELECT COUNT(*) as total FROM dosen WHERE status = 'active'")
+	err = row.Scan(&data.total)
+	if err == nil {
+		response.Error = false
+		response.Message = "Data ditemukan"
+		response.Data = data
+		respondWithSuccess(response, w)
+	} else {
+		fmt.Println(err)
+		response.Message = "Dosen tidak ditemukan"
+		respondWithSuccess(response, w)
+	}
+}
 // ================================ DOSEN ================================ //
 
 
@@ -630,6 +651,27 @@ func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
 		respondWithSuccess(response, w)
 	}
 }
+
+func mahasiswaTotal(w http.ResponseWriter, r *http.Request) {
+	var data Counter
+	var response DetailResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = data
+
+	row := db.QueryRow("SELECT COUNT(*) as total FROM mahasiswa WHERE status = 'active'")
+	err = row.Scan(&data.total)
+	if err == nil {
+		response.Error = false
+		response.Message = "Data ditemukan"
+		response.Data = data
+		respondWithSuccess(response, w)
+	} else {
+		fmt.Println(err)
+		response.Message = "Mahasiswa tidak ditemukan"
+		respondWithSuccess(response, w)
+	}
+}
 // ================================ MAHASISWA ================================ //
 
 // ================================ REQUEST ================================ //
@@ -873,6 +915,34 @@ func requestMahasiswaCreate(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response.Error = false
 		response.Message = "Request untuk Dosen berhasil di buat"
+		respondWithSuccess(response, w)
+	}
+}
+
+func requestTotal(w http.ResponseWriter, r *http.Request) {
+	var data Counter
+	var response DetailResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = data
+
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND STATUS = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
+	row := db.QueryRow("SELECT COUNT(*) as total FROM requests WHERE 1=1 " + status)
+	err = row.Scan(&data.total)
+	if err == nil {
+		response.Error = false
+		response.Message = "Data ditemukan"
+		response.Data = data
+		respondWithSuccess(response, w)
+	} else {
+		fmt.Println(err)
+		response.Message = "Request tidak ditemukan"
 		respondWithSuccess(response, w)
 	}
 }
