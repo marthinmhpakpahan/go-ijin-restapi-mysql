@@ -39,5 +39,6 @@ func setupRoutes(router *mux.Router) {
 	router.HandleFunc("/request/mahasiswa/update/", requestMahasiswaUpdate).Methods(http.MethodPost)
 	router.HandleFunc("/request/mahasiswa/delete/{id}", requestMahasiswaDelete).Methods(http.MethodGet)
 	router.HandleFunc("/request/total/", requestTotal).Methods(http.MethodGet)
+	router.HandleFunc("/request/", requestIndex).Methods(http.MethodGet)
 	// ============================ REQUEST ============================ //
 }

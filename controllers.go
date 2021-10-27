@@ -675,6 +675,53 @@ func mahasiswaTotal(w http.ResponseWriter, r *http.Request) {
 // ================================ MAHASISWA ================================ //
 
 // ================================ REQUEST ================================ //
+func requestIndex(w http.ResponseWriter, r *http.Request) {
+	var requests = []Request{}
+	var response IndexResponse
+	response.Error = true
+	response.Message = "Terjadi kesalahan pada sistem"
+	response.Data = requests
+
+	param_limit := r.URL.Query()["limit"]
+	limit := ""
+	if len(param_limit) > 0 {
+		limit = " LIMIT " + param_limit[0]
+	}
+	fmt.Println("Limit: ", limit)
+
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND STATUS = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
+	rows, err := db.Query("SELECT * FROM requests WHERE 1=1 " + status + " ORDER BY id DESC " + limit)
+	if err != nil {
+		response.Message = "(0) Terjadi kesalahan pada database"
+		fmt.Println(err)
+		respondWithSuccess(response, w)
+		return
+	}
+
+	for rows.Next() {
+		var request Request
+		err = rows.Scan(&request.Id, &request.RequestTypeId, &request.Description, &request.DosenId, &request.MahasiswaId, &request.StartDatetime, &request.EndDatetime, &request.Status, &request.CreatedAt, &request.ModifiedAt)
+		if err != nil {
+			response.Message = "(1) Terjadi kesalahan pada database"
+			fmt.Println(err)
+			respondWithSuccess(response, w)
+			return
+		}
+		requests = append(requests, request)
+	}
+
+	response.Error = true
+	response.Message = "Data ditemukan"
+	response.Data = requests
+	respondWithSuccess(response, w)
+}
+
 func requestDosen(w http.ResponseWriter, r *http.Request) {
 	var requests = []Request{}
 	var response IndexResponse
