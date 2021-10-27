@@ -87,7 +87,7 @@ func dosenIndex(w http.ResponseWriter, r *http.Request) {
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
-	response.Data = []Dosen{}
+	response.Data = make([]string, 0)
 	var dosens = []Dosen{}
 
 	rows, err := db.Query("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at FROM dosen ORDER BY id DESC " + limit)
@@ -391,7 +391,7 @@ func mahasiswaIndex(w http.ResponseWriter, r *http.Request) {
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
-	response.Data = []Mahasiswa{}
+	response.Data = make([]string, 0)
 	var mahasiswas = []Mahasiswa{}
 
 	rows, err := db.Query("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa ORDER BY id DESC " + limit)
@@ -680,7 +680,7 @@ func requestIndex(w http.ResponseWriter, r *http.Request) {
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
-	response.Data = requests
+	response.Data = make([]string, 0)
 
 	param_limit := r.URL.Query()["limit"]
 	limit := ""
@@ -727,7 +727,7 @@ func requestDosen(w http.ResponseWriter, r *http.Request) {
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
-	response.Data = requests
+	response.Data = make([]string, 0)
 
 	param_limit := r.URL.Query()["limit"]
 	limit := ""
@@ -783,7 +783,7 @@ func requestMahasiswa(w http.ResponseWriter, r *http.Request) {
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
-	response.Data = requests
+	response.Data = make([]string, 0)
 
 	param_limit := r.URL.Query()["limit"]
 	limit := ""
