@@ -692,11 +692,16 @@ func requestIndex(w http.ResponseWriter, r *http.Request) {
 	param_status := r.URL.Query()["status"]
 	status := ""
 	if len(param_status) > 0 {
-		status = " AND STATUS = '" + param_status[0] +"'"
+		status = " AND r.status = '" + param_status[0] +"'"
 	}
 	fmt.Println("status: ", status)
 
-	rows, err := db.Query("SELECT * FROM requests WHERE 1=1 " + status + " ORDER BY id DESC " + limit)
+	query := `SELECT r.*, rt.name as request_name, d.nama_lengkap as dosen_name, m.nama_lengkap as mahasiswa_name FROM requests r
+			INNER JOIN request_type rt ON r.request_type_id = rt.id
+			INNER JOIN dosen d ON r.dosen_id = d.id
+			INNER JOIN mahasiswa m ON r.mahasiswa_id = m.id
+			WHERE 1=1 ` + status + ` ORDER BY id DESC ` + limit
+	rows, err := db.Query(query)
 	if err != nil {
 		response.Message = "(0) Terjadi kesalahan pada database"
 		fmt.Println(err)
@@ -706,7 +711,7 @@ func requestIndex(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var request Request
-		err = rows.Scan(&request.Id, &request.RequestTypeId, &request.Description, &request.DosenId, &request.MahasiswaId, &request.StartDatetime, &request.EndDatetime, &request.Status, &request.CreatedAt, &request.ModifiedAt)
+		err = rows.Scan(&request.Id, &request.RequestTypeId, &request.Description, &request.DosenId, &request.MahasiswaId, &request.StartDatetime, &request.EndDatetime, &request.Status, &request.CreatedAt, &request.ModifiedAt, &request.RequestName, &request.DosenName, &request.MahasiswaName)
 		if err != nil {
 			response.Message = "(1) Terjadi kesalahan pada database"
 			fmt.Println(err)

@@ -46,9 +46,12 @@ type RequestType struct {
 type Request struct {
 	Id int64 `json:"id"`
 	RequestTypeId string `json:"request_type_id"`
+	RequestName string `json:"request_name"`
 	Description string `json:"description"`
 	DosenId string `json:"dosen_id"`
+	DosenName string `json:"dosen_name"`
 	MahasiswaId string `json:"mahasiswa_id"`
+	MahasiswaName string `json:"mahasiswa_name"`
 	StartDatetime string `json:"start_datetime"`
 	EndDatetime string `json:"end_datetime"`
 	Status string `json:"status"`
