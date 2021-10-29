@@ -84,13 +84,20 @@ func dosenIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Limit: ", limit)
 
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND status = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 	response.Data = make([]string, 0)
 	var dosens = []Dosen{}
 
-	rows, err := db.Query("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at FROM dosen ORDER BY id DESC " + limit)
+	rows, err := db.Query("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at FROM dosen WHERE 1=1 "+status+" ORDER BY id DESC " + limit)
 	if err != nil {
 		response.Message = "(0) Terjadi kesalahan pada database"
 		fmt.Println(err)
@@ -388,13 +395,20 @@ func mahasiswaIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Limit: ", limit)
 
+	param_status := r.URL.Query()["status"]
+	status := ""
+	if len(param_status) > 0 {
+		status = " AND status = '" + param_status[0] +"'"
+	}
+	fmt.Println("status: ", status)
+
 	var response IndexResponse
 	response.Error = true
 	response.Message = "Terjadi kesalahan pada sistem"
 	response.Data = make([]string, 0)
 	var mahasiswas = []Mahasiswa{}
 
-	rows, err := db.Query("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa ORDER BY id DESC " + limit)
+	rows, err := db.Query("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa WHERE 1=1 "+status+" ORDER BY id DESC " + limit)
 	if err != nil {
 		response.Message = "(0) Terjadi kesalahan pada database"
 		fmt.Println(err)
