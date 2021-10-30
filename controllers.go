@@ -215,8 +215,8 @@ func dosenShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.QueryRow("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, status, created_at, modified_at FROM dosen WHERE id = ?", id)
-	err = row.Scan(&dosen.Id, &dosen.Username, &dosen.Foto, &dosen.NIP, &dosen.NamaLengkap, &dosen.JenisKelamin, &dosen.Status, &dosen.CreatedAt, &dosen.ModifiedAt)
+	row := db.QueryRow("SELECT id, username, foto, nip, nama_lengkap, jenis_kelamin, description, status, created_at, modified_at FROM dosen WHERE id = ?", id)
+	err = row.Scan(&dosen.Id, &dosen.Username, &dosen.Foto, &dosen.NIP, &dosen.NamaLengkap, &dosen.JenisKelamin, &dosen.Description, &dosen.Status, &dosen.CreatedAt, &dosen.ModifiedAt)
 	if err == nil {
 		response.Error = false
 		response.Message = "Data ditemukan"
@@ -241,6 +241,7 @@ func dosenUpdate(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	namaLengkap := r.FormValue("nama_lengkap")
 	jenisKelamin := r.FormValue("jenis_kelamin")
+	description := r.FormValue("description")
 
 	if errFile == nil {
 		fmt.Println("Uploaded File: %+v\n", handler.Filename)
@@ -272,9 +273,9 @@ func dosenUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fullPath == "" {
-		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), id)
+		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, description = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), description, id)
 	} else {
-		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, foto = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), fullPath, id)
+		_, err = db.Exec("UPDATE dosen SET nip = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, description = ?, foto = ? WHERE id = ?", nip, namaLengkap, jenisKelamin, generateMD5(password), description, fullPath, id)
 	}
 
 	if err != nil {
@@ -300,6 +301,7 @@ func dosenCreate(w http.ResponseWriter, r *http.Request) {
 	nip := r.FormValue("nip")
 	namaLengkap := r.FormValue("nama_lengkap")
 	jenisKelamin := r.FormValue("jenis_kelamin")
+	description := r.FormValue("description")
 
 	if isDataExists("username", username, "dosen") {
 		response.Message = "Username ini sudah terdaftar"
@@ -336,7 +338,7 @@ func dosenCreate(w http.ResponseWriter, r *http.Request) {
 		// ============ UPLOADING FILES ============ //
 	}
 
-	_, err = db.Exec("INSERT INTO dosen (username, password, foto, nip, nama_lengkap, jenis_kelamin, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nip, namaLengkap, jenisKelamin)
+	_, err = db.Exec("INSERT INTO dosen (username, password, foto, nip, nama_lengkap, jenis_kelamin, description, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nip, namaLengkap, jenisKelamin, description)
 
 	if err != nil {
 		response.Message = "Terjadi kesalahan pada database"
@@ -526,8 +528,8 @@ func mahasiswaShow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row := db.QueryRow("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at FROM mahasiswa WHERE id = ?", id)
-	err = row.Scan(&mahasiswa.Id, &mahasiswa.Username, &mahasiswa.Foto, &mahasiswa.NIM, &mahasiswa.NamaLengkap, &mahasiswa.JenisKelamin, &mahasiswa.Kelas, &mahasiswa.TahunMasuk, &mahasiswa.Semester, &mahasiswa.Status, &mahasiswa.CreatedAt)
+	row := db.QueryRow("SELECT id, username, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, description, status, created_at FROM mahasiswa WHERE id = ?", id)
+	err = row.Scan(&mahasiswa.Id, &mahasiswa.Username, &mahasiswa.Foto, &mahasiswa.NIM, &mahasiswa.NamaLengkap, &mahasiswa.JenisKelamin, &mahasiswa.Kelas, &mahasiswa.TahunMasuk, &mahasiswa.Semester, &mahasiswa.Description, &mahasiswa.Status, &mahasiswa.CreatedAt)
 	if err == nil {
 		response.Error = false
 		response.Message = "Data ditemukan"
@@ -555,6 +557,7 @@ func mahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
 	kelas := r.FormValue("kelas")
 	tahun_masuk := r.FormValue("tahun_masuk")
 	semester := r.FormValue("semester")
+	description := r.FormValue("description")
 
 	if errFile == nil {
 		fmt.Println("Uploaded File: %+v\n", handler.Filename)
@@ -586,9 +589,9 @@ func mahasiswaUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fullPath == "" {
-		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, id)
+		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ?, description = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, description, id)
 	} else {
-		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ?, foto = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, fullPath, id)
+		_, err = db.Exec("UPDATE mahasiswa SET nim = ?, nama_lengkap = ?, jenis_kelamin = ?, password = ?, kelas = ?, tahun_masuk = ?, semester = ?, description = ?, foto = ? WHERE id = ?", nim, namaLengkap, jenisKelamin, generateMD5(password), kelas, tahun_masuk, semester, description, fullPath, id)
 	}
 
 	if err != nil {
@@ -617,6 +620,7 @@ func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
 	kelas := r.FormValue("kelas")
 	tahun_masuk := r.FormValue("tahun_masuk")
 	semester := r.FormValue("semester")
+	description := r.FormValue("description")
 
 	if isDataExists("username", username, "mahasiswa") {
 		response.Message = "Username ini sudah terdaftar"
@@ -653,7 +657,7 @@ func mahasiswaCreate(w http.ResponseWriter, r *http.Request) {
 		// ============ UPLOADING FILES ============ //
 	}
 
-	_, err = db.Exec("INSERT INTO mahasiswa (username, password, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nim, namaLengkap, jenisKelamin, kelas, tahun_masuk, semester)
+	_, err = db.Exec("INSERT INTO mahasiswa (username, password, foto, nim, nama_lengkap, jenis_kelamin, kelas, tahun_masuk, semester, description, status, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW(), NOW())", username, generateMD5(password), fullPath, nim, namaLengkap, jenisKelamin, kelas, tahun_masuk, semester, description)
 
 	if err != nil {
 		response.Message = "Terjadi kesalahan pada database"

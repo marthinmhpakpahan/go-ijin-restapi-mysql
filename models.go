@@ -14,6 +14,7 @@ type Dosen struct {
 	NIP string `json:"nip"`
 	NamaLengkap string `json:"nama_lengkap"`
 	JenisKelamin string `json:"jenis_kelamin"`
+	Description string `json:"description"`
 	Status string `json:"status"`
 	CreatedAt string `json:"created_at"`
 	ModifiedAt string `json:"modified_at"`
@@ -30,6 +31,7 @@ type Mahasiswa struct {
 	Kelas string `json:"kelas"`
 	TahunMasuk string `json:"tahun_masuk"`
 	Semester string `json:"semester"`
+	Description string `json:"description"`
 	Status string `json:"status"`
 	CreatedAt string `json:"created_at"`
 	ModifiedAt string `json:"modified_at"`
